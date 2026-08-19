@@ -1,3 +1,5 @@
+# jkboyce's Original Readme for Super Star Trek
+
 One of my earliest memories of computer games was [Star Trek](https://en.wikipedia.org/wiki/Star_Trek_(1971_video_game)). Before I ever owned a microcomputer, I played Star Trek on a [DEC PDP-11](https://en.wikipedia.org/wiki/PDP-11) timeshare system that my uncle had access to. He had a line printer terminal (basically a terminal with a printer instead of a CRT screen) with an acoustic modem coupler that fit the [AT&T phones](https://en.wikipedia.org/wiki/Princess_telephone) of the day. We would dial in to the PDP-11, listen for the grinding noise of the modem connection, shove the handset into the coupler (careful to get the right orientation), and Voila! Like magic the printer would start printing out text. The PDP-11 ran an operating system called [RSTS 7.0](https://en.wikipedia.org/wiki/RSTS/E). That's where I got my first experience with BASIC programming, in between games of Star Trek.
 
 This is a Python port I did of the most popular version, called Super Star Trek and published in the book _Basic Computer Games_ (1978) by Dave Ahl. This port has identical gameplay to the original, and I've been careful to exactly reproduce all output and text formatting to give the authentic retro experience. The game is simple but fun and challenging even today.
@@ -108,3 +110,31 @@ The relation between the Historical and Standard nomenclatures is shown in the s
 15. This version of Star Trek was created for a Data General Nova 800 system with 32K or core. So that it would fit, the instructions are separated from the main program via a CHAIN. For conversion to DEC BASIC-PLUS, Statement 160 (Randomize) should be moved after the return from the chained instructions, say to Statement 245. For Altair BASIC, Randomize and the chain instructions should be eliminated.
 
 † Designates trademark of Paramount Pictures Corporation. Used by permission of Paramount Pictures Corporation.
+
+# Notes on additions
+
+When I was in high school, I played a very different version of _Star Trek_. The sector scans were sparser, there were planets to explore and mine dilithium from, there were Romulans and Tholians and a death ray, and in dire circumstances you could abandon the _Enterprise_ to its fate and take command of a garbage scow, the _Faerie Queen_.
+
+The strangest thing about this version of the game, though, was the Marcus Aurelius quotes.  You would be playing, and suddenly a block of text would spit out that had _no_ connection with the game.  I had the BASIC code for this at one time, but over the years disks were lost, computers died, and it was no more.  But I remembered the quotes, and from time to time I would ask online if anyone remembered this weird version of _Star Trek_.
+
+Others remembered, and there's a QBASIC version of it.  I went through the code, looked at the quotes, and saw how they were triggered.
+
+I had Jack Boyce's Python adaptation of _Super Star Trek_ -- honestly, it saved me from trying to port it myself -- and I enjoyed playing it. I had a photocopy of the code, from an old issue of _Creative Computing_, but I had actually never played it until I found Boyce's Github. It did everything I wanted it to do in a _Star Trek_ game of this style. I didn't need to mine dilithium; just let me get out there and destroy some Klingons! And a typical game could be finished in about 10 to 15 minutes.
+
+I don't know when I hit on the idea of merging the Marcus Aurelius quotes into Boyce's Python port, but with some time on my hands I decided to give it a go. I saw what the triggers in that QBASIC version were, and I coded in similar triggers. The quotes are weird, maybe a little overwhelming at times, but they add that very strange flavor back into a version of the game.  They can be turned off by uncommenting a line in the code.
+
+I also added the instructions into the game. In the original Leedom/Ahl code, the instructions were a separate BASIC program, probably for memory reasons. Modern computers aren't going to have the same limitation of, say, a 16 kilobyte memory space. I could bring the instructions right into the game.
+
+Finally, one thing I noticed while playing Boyce's _Super Star Trek_ was that, sometimes, the initial galaxy generation would be wildly skewed. I had a game once where I had more starbases than Klingons, and both were under ten! I thought about the possibility of reworking the galaxy generation entirely, but a more interesting idea struck me.
+
+What if, if the number of Klingons is *really* low, the game then finds an empty sector and adds Klingons to it? What about _four_?
+
+This is in line with the original Leedom/Ahl code. It has a little routine that checks if the galaxy generation resulted in _zero_ starbases, then finds a random sector and adds on. My idea was a little more complicated, but it was in the same vein.
+
+Four Klingons in a single sector _is_ going to be a challenge, and for that reason, the game will also add a starbase to an adjacent sector that was without one. This redresses some of the balance issues that a 4 Klingon sector would introduce.
+
+In several places, the game assumes a maximum of three Klingons, so I had to adjust some code (for example, in the phaser firing routine) to allow for four Klingons in a sector.
+
+In a sense, this creates a "boss fight" in _Super Star Trek_. The version of _Star Trek_ I mentioned above, the one where the Marcus Aurelius quotes came from, also had a Klingon Commander, who could travel around the galaxy, like the _Enterprise_, and was something like a video game boss. Now _Super Star Trek_ has a sector with four Klingons and, with it, more challenge.
+
+_Super Star Trek_ may be over fifty years old, yet it's still a fun way to spend fifteen minutes, saving the galaxy from the Klingon invaders.
