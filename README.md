@@ -129,11 +129,11 @@ Finally, one thing I noticed while playing Boyce's _Super Star Trek_ was that, s
 
 What if, if the number of Klingons is *really* low, the game then finds an empty sector and adds Klingons to it? What about _four_?
 
-This is in line with the original Leedom/Ahl code. It has a little routine that checks if the galaxy generation resulted in _zero_ starbases, then finds a random sector and adds on. My idea was a little more complicated, but it was in the same vein.
+This is in line with the original Leedom/Ahl code. It has a little routine that checks if the galaxy generation resulted in _zero_ starbases, then finds a random sector and adds one. My idea was a little more complicated, but it was in the same vein.
 
 Four Klingons in a single sector _is_ going to be a challenge, and for that reason, the game will also add a starbase to an adjacent sector that was without one. This redresses some of the balance issues that a 4 Klingon sector would introduce.
 
-In several places, the game assumes a maximum of three Klingons, so I had to adjust some code (for example, in the phaser firing routine) to allow for four Klingons in a sector.
+In several places, the game assumed a maximum of three Klingons, so I had to adjust some code (for example, in the phaser firing routine) to allow for four Klingons in a sector.
 
 In a sense, this creates a "boss fight" in _Super Star Trek_. The version of _Star Trek_ I mentioned above, the one where the Marcus Aurelius quotes came from, also had a Klingon Commander, who could travel around the galaxy, like the _Enterprise_, and was something like a video game boss. Now _Super Star Trek_ has a sector with four Klingons and, with it, more challenge.
 
