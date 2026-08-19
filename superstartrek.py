@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # ****        **** STAR TREK ****        ****
 # **** SIMULATION OF A MISSION OF THE STARSHIP ENTERPRISE,
@@ -11,7 +13,25 @@
 # Python translation by Jack Boyce - February 2021
 #   Output is identical to BASIC version except for a few
 #   fixes (as noted, search `bug`) and minor cleanup.
-
+#
+# Modified by Allyn Gibson - Summer 2026
+#   Features added:
+#   * Instructions (which were separate in the Leedom/Ahl
+#     version)
+#   * Marcus Aurelius quotes when certain triggers are
+#     reached. This was an odd feature in a version of
+#     Star Trek in code descended from the UTexas version
+#     of the game. Can be disabled by uncommenting a line
+#     in the marcus_aurleius() procedure. This does not
+#     add *every* UTexas feature -- no Romulans, no
+#     Tholians, no Faerie Queen, no Death Ray. It's still
+#     the Leedom/Ahl game from Creative Computer, now
+#     with bonus Stoicism.
+#   * A "super" sector with 4 Klingons. If the initial
+#     galaxy generation creates fewer than 15 Klingons,
+#     the program will find an empty sector and add four
+#     Klingons to bring the number up and add to the
+#     challenge. A "boss fight," if you will.
 
 import random
 from math import sqrt
@@ -116,7 +136,7 @@ def navigation():
         return
 
     # klingons move and fire
-    for i in range(3):
+    for i in range(4):
         if k[i][2] != 0:
             insert_marker(k[i][0], k[i][1], '   ')
             k[i][0], k[i][1] = find_empty_place()
@@ -239,7 +259,13 @@ def maneuver_energy(n):
 
 def short_range_scan():
     # Print a short range scan.
-    global docked, e, p, s
+    global docked, e, p, s, m1, m2, command
+
+    if command == 'SRS':
+        m2 = m2 + 1
+    if m2 > 3:
+        m1 = 8
+        marcus_aurelius()
 
     docked = False
     for i in (s1 - 1, s1, s1 + 1):
@@ -363,7 +389,7 @@ def phaser_control():
         x *= random.random()
 
     h1 = int(x / k3)
-    for i in range(3):
+    for i in range(4):
         if k[i][2] <= 0:
             continue
 
@@ -441,7 +467,7 @@ def photon_torpedoes():
         if k9 <= 0:
             end_game(won=True, quit=False)
             return
-        for i in range(3):
+        for i in range(4):
             if x3 == k[i][0] and y3 == k[i][1]:
                 k[i][2] = 0
     elif compare_marker(x3, y3, ' * '):
@@ -483,7 +509,7 @@ def klingons_fire():
         print("STARBASE SHIELDS PROTECT THE ENTERPRISE")
         return
 
-    for i in range(3):
+    for i in range(4):
         if k[i][2] <= 0:
             continue
 
@@ -650,7 +676,7 @@ def computer():
             print("FROM ENTERPRISE TO KLINGON BATTLE "
                   f"CRUISER{'S' if k3 > 1 else ''}")
 
-            for i in range(3):
+            for i in range(4):
                 if k[i][2] > 0:
                     print_direction(s1, s2, k[i][0], k[i][1])
             return
@@ -728,8 +754,10 @@ def print_direction(from1, from2, to1, to2):
 
 def startup():
     # Initialize the game variables and map, and print startup messages.
-    global g, z, d, t, t0, t9, docked, e, e0, p, p0, s, k9, b9, s9, c
+    global g, z, d, t, t0, t9, docked, e, e0, p, p0, s, k9, b9, s9, c 
     global devices, q1, q2, s1, s2, k7
+    # For Marcus Aurelius quotes
+    global ma, m1, m2, command
 
     print("\n\n\n\n\n\n\n\n\n\n\n"
           "                                    ,------*------,\n"
@@ -739,6 +767,9 @@ def startup():
           "                          '----------------'\n\n"
           "                    THE USS ENTERPRISE --- NCC-1701\n"
           "\n\n\n\n")
+
+    if input("DO YOU NEED INSTRUCTIONS (Y/N)? ").upper().strip()[:1] == 'Y':
+        instructions()
 
     # set up global game variables
     g = [[0] * 8 for _ in range(8)]         # galaxy map
@@ -752,7 +783,12 @@ def startup():
     s = 0                                   # shields
     k9, b9 = 0, 0                           # total Klingons, bases in galaxy
     # ^ bug in original, was b9 = 2
+    k4, b4 = 0, 0                           # will a quadrant have 4 Klingons?
     s9 = 200                                # avg. Klingon shield strength
+    command = ''                            # string for command
+    ma = [0] * 13                           # Marcus Aurelius display flag
+    m1 = 0                                  # Marcus Aurelius pointer
+    m2 = 0                                  # counter for SRS command (Marcus Aurelius)
 
     c = [[0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1],
          [1, 0], [1, 1], [0, 1]]            # vectors in cardinal directions
@@ -788,6 +824,29 @@ def startup():
     if k9 > t9:
         t9 = k9 + 1
 
+    # if 15 or fewer Klingons, one quadrant will have 4
+    if k9 < 16:
+        while k4 == 0:
+            q1, q2 = random.randint(2, 5), random.randint(2, 5)
+            if g[q1][q2] < 100:
+                g[q1][q2] += 400
+                k9 += 4
+                # Add a starbase nearby
+                while b4 == 0:
+                    q3, q4 = (q1+1-random.randint(0, 2)), (q2+1-random.randint(0, 2))
+                    b4 = (g[q3][q4] // 10) % 10
+                    # If the random nearby sector doesn't have a starbase
+                    if b4 == 0:  
+                        g[q3][q4] += 10
+                        b9 += 1
+                        b4 = 1
+                    # If the random nearby sector has one already, try again
+                    else:
+                        b4 = 0
+                k4 = 1
+            t9 += 2  # Add 2 days to the clock because diffuclty has increased
+            q1, q2 = fnr(), fnr()  # Reset the Enterprise's starting position
+
     if b9 == 0:  # original has buggy extra code here
         b9 = 1
         g[q1][q2] += 10
@@ -806,7 +865,7 @@ def startup():
 
 def new_quadrant():
     # Enter a new quadrant: populate map and print a short range scan.
-    global z, k3, b3, s3, d4, k, qs, b4, b5
+    global z, k3, b3, s3, d4, k, qs, b4, b5, m1
 
     k3 = b3 = s3 = 0                        # Klingons, bases, stars in quad.
     d4 = 0.5 * random.random()              # extra delay in repairs at base
@@ -824,12 +883,21 @@ def new_quadrant():
         b3 = g[q1][q2] // 10 - 10 * k3
         s3 = g[q1][q2] - 100 * k3 - 10 * b3
 
+        # Marcus Aurelius trigger
+        if k3 > 3:
+            m1 = 12
+        elif k3 > 2:
+            m1 = 5
+        elif k3 > 0:
+            m1 = 6
+
         if k3 != 0:
+            marcus_aurelius()
             print("COMBAT AREA      CONDITION RED")
             if s <= 200:
                 print("   SHIELDS DANGEROUSLY LOW")
 
-    k = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]   # Klingons in current quadrant
+    k = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]   # Klingons in current quadrant
     qs = ' ' * 192                          # quadrant string
 
     # build quadrant string
@@ -847,12 +915,243 @@ def new_quadrant():
 
     short_range_scan()
 
+def instructions():
+    print("\n\n")
+    print("     INSTRUCTIONS FOR 'SUPER STAR TREK'")
+    print("\n")
+    print("1. WHEN YOU SEE \\COMMAND ?\\ PRINTED, ENTER ONE OF THE LEGAL")
+    print("     COMMANDS (NAV, SRS, LRS, PHA, TOR, SHE, DAM, COM, OR XXX).")
+    print("2. IF YOU SHOULD TYPE IN AN ILLEGAL COMMAND, YOU'LL GET A SHORT")
+    print("     LIST OF THE LEGAL COMMANDS PRINTED OUT.")
+    print("3. SOME COMMANDS REQUIRE YOU TO ENTER DATA (FOR EXAMPLE THE")
+    print("     'NAV' COMMAND COMES BACK WITH COURSE (1-9) ?'.) IF YOU")
+    print("     TYPE IN ILLEGAL DATA (LIKE NEGATIVE NUMBERS), THAT COMMAND")
+    print("     WILL BE ABORTED")
+    print("\n")
+    print("     THE GALAXY IS DIVIDED INTO AN 8 X 8 QUADRANT GRID,")
+    print("AND EACH QUADRANT IS FURTHER DIVIDED INTO AN 8 X 8 SECTOR GRID.")
+    print("\n")
+    print("     YOU WILL BE ASSIGNED A STARTING POINT SOMEWHERE IN THE")
+    print("GALAXY TO BEGIN A TOUR OF DUTY AS COMMANDER OF THE STARSHIP")
+    print("\\ENTERPRISE\\; YOUR MISSION: TO SEEK AND DESTROY THE FLEET OF")
+    print("KLINGON WARSHIPS WHICH ARE MENACING THE UNITED FEDERATION OF")
+    print("PLANETS.")
+    input("CONTINUE...")
+    print("\x1b[2J\033[H")
+    print("     YOU HAVE THE FOLLOWING COMMANDS AVAILABLE TO YOU AS CAPTAIN")
+    print("OF THE STARSHIP ENTERPRISE:")
+    print("\n")
+    print("\\NAV\\ COMMAND = WARP ENGINE CONTROL --")
+    print("     COURSE 15 IN A CIRCULAR NUMERICAL      4  3  2")
+    print("     VECTOR ARRANGEMENT AS SHOWN.            . . .")
+    print("     INTEGER AND REAL VALUES MAY BE           ...")
+    print("     USED. (THUS COURSE 1.5 IS HALF-      5 ---*--- 1")
+    print("     WAY BETWEEN 1 AND 2.                     ...")
+    print("                                             . . .")
+    print("     VALUES MAY APPROACH 9.0. WHICH         6  7  8")
+    print("     ITSELF IS EQUIVALENT TO 1.0.")
+    print("                                             COURSE")
+    print("     ONE WARP FACTOR IS THE SIZE OF")
+    print("     ONE QUADRANT.  THEREFORE, TO GET") 
+    print("     FROM QUADRANT 6,5 TO 5,5, YOU WOULD")
+    print("     USE COURSE 3. WARP FACTOR 1.")
+    input("CONTINUE...")
+    print("\x1b[2J\033[H")
+    print("\\SRS\\ COMMAND = SHORT RANGE SENSOR SCAN --")
+    print("     SHOWS YOU A SCAN OF YOUR PRESENT QUADRANT.")
+    print("\n")
+    print("     SYMBOLOGY ON YOUR SENSOR SCREEN IS AS FOLLOWS:")
+    print("        <*> = YOUR STARSHIP'S POSITION")
+    print("        +K+ = KLINGON BATTLE CRUISER")
+    print("        >!< = FEDERATION STARBASE (REFUEL/REPAIR/RE-ARM HERE!)")
+    print("         *  = STAR")
+    print("\n")
+    print("     A CONDENSED 'STATUS REPORT' WILL ALSO BE PRESENTED.")
+    input("CONTINUE...")
+    print("\x1b[2J\033[H")
+    print("\\LRS\\ COMMAND = LONG RANGE SENSOR SCAN --")
+    print("     SHOWS CONDITIONS IN SPACE FOR ONE QUADRANT ON EACH SIDE")
+    print("     OF THE ENTERPRISE (WHICH IS IN THE MIDDLE OF THE SCAN)")
+    print("     THE SCAN IS CODED IN THE FORM \\###\\, WHERE THE UNITS DIGIT")
+    print("     IS THE NUMBER OF STARS. THE TENS DIGIT IS THE NUMBER OF")
+    print("     STARBASES, AND THE HUNDRESDS DIGIT IS THE NUMBER OF")
+    print("     KLINGONS.")
+    print("\n")
+    print("     EXAMPLE - 207 - 2 KLINGONS, NO STARBASES, & 7 STARS.")
+    input("CONTINUE...")
+    print("\x1b[2J\033[H")
+    print("\\PHA\\ COMMAND = PHASER CONTROL --")
+    print("     ALLOWS YOU TO DESTROY THE KLINGON BATTLE CRUISERS BY ")
+    print("     ZAPPING THEM WITH SUITABLY LARGE UNITS OF ENERGY TO")
+    print("     DEPLETE THEIR SHIELD POWER. (REMEMBER, KLINGONS HAVE")
+    print("     PHASERS, T00!)")
+    print("\n")
+    print("\\TOR\\ COMMAND = PHOTON TORPEDO CONTROL --")
+    print("     TORPEDO COURSE IS THE SAME AS USED IN WARP ENGINE CONTROL")
+    print("     IF YOU HIT THE KLINGON VESSEL. HE IS DESTROYED AND CANNOT")
+    print("     FIRE BACK AT YOU. IF YOU MISS. YOU ARE SUBJECT TO HIS")
+    print("     PHASER FIRE.  IN EITHER CASE, YOU ARE ALSO SUBJECT TO")
+    print("     THE PHASER FIRE OF ALL OTHER KLINGONS IN THE QUADRANT.")
+    print("\n")
+    print("     THE LIBRARY-COMPUTER (\\COM\\ COMMAND) HAS AN OPTION TO ")
+    print("     COMPUTE TORPEDO TRAJECTORY FOR YOU (OPTION 2).")
+    input("CONTINUE...")
+    print("\x1b[2J\033[H")
+    print("\\SHE\\ COMMAND = SHIELD CONTROL --")
+    print("     DEFINES THE NUMBER OF ENERGY UNITS TO BE ASSIGNED TO THE")
+    print("     SHIELDS. ENERGY IS TAKEN FROM TOTAL SHIP'S ENERGY. NOTE")
+    print("     THAT THE STATUS DISPLAY TOTAL ENERGY INCLUDES SHIELD ENERGY.")
+    print("\n")
+    print("\\DAM\\ COMMAND = DAMAGE CONTROL REPORT --")
+    print("     GIVES THE STATE OF REPAIR OF ALL DEVICES. WHERE A NEGATIVE")
+    print("     'STATE OF REPAIR' SHOWS THAT THE DEVICE IS TEMPORARILY")
+    print("     DAMAGED.")
+    input("CONTINUE...")
+    print("\x1b[2J\033[H")
+    print("\\COM\\ COMMAND = LIBRARY-COMPUTER --")
+    print("     THE LIBRARY-COMPUTER CONTAINS SIX OPTIONS:")
+    print("     OPTION 0 = CUMULATIVE GALACTIC RECORD")
+    print("        THIS OPTION SHOWS COMPUTER MEMORY OF THE RESULTS OF ALL")
+    print("        PREVIOUS SHORT AND LONG RANGE SENSOR SCANS")
+    print("     OPTION 1 = STATUS REPORT")
+    print("        THIS OPTION SHOWS THE NUMBER OF KLINGONS. STARDATES,")
+    print("        AND STARBASES REMAINING IN THE GAME.")
+    print("     OPTION 2 = PHOTON TORPEDO DATA")
+    print("        WHICH GIVES DIRECTIONS AND DISTANCE FROM THE ENTERPRISE")
+    print("        TO ALL KLINGONS IN YOUR QUADRANT")
+    print("     OPTION 3 = STARBASE NAV DATA")
+    print("        THIS OPTION GIVES DIRECTION AND DISTANCE TO ANY ")
+    print("        STARBASE WITHIN YOUR QUADRANT")
+    print("     OPTION 4 = DIRECTION/DISTANCE CALCULATOR")
+    print("        THIS OPTION ALLOWS YOU TO ENTER COORDINATES FOR")
+    print("        DIRECTION/DISTANCE CALCULATIONS")
+    print("     OPTION 5 = CALACTIC /REGION NAME/ MAP")
+    print("        THIS OPTION PRINTS THE NAMES OF THE SIXTEEN MAJOR ")
+    print("        GALACTIC REGIONS REFERRED TO IN THE GAME.")
+    input("CONTINUE...")
+    print("\n\n")
+
+def marcus_aurelius():
+    global ma, m1
+    # In the Star Trek line of descent from the University of
+    # Texas Fortran code, there's a strange version that spits
+    # out quotes from The Meditations of Marcus Aurelius,
+    # specifically, the George Long translation.
+    # This routine implements the Marcus Aurelius quotes
+    # for the Bob Leedom/David H. Ahl version of Super Star Trek
+    # from Creative Computing/101 BASIC Computer Games of
+    # the late 1970s.
+
+    # return
+    # Uncomment line above to disable the Marcus Aurelius quotes
+    if ma[m1] == 1:
+        return()
+    else:
+        ma[m1] = 1
+
+    print("\n")
+    if m1 == 1:
+        # Time-based: more than 25 stardates into the mission
+        print("   ALL THINGS ARE FAMILIAR TO US; BUT THE")
+        print("   DISTRIBUTION OF THEM STILL REMAINS THE")
+        print("   SAME.")
+        print("         --- MARCUS AURELIUS, VIII.6")
+    elif m1 == 2:
+        # Time-based: more than 18 stardates into the mission
+        print("   THINK OF THE UNIVERSAL SUBSTANCE, OF WHICH")
+        print("   THOU HAST A VERY SMALL PORTION; AND OF")
+        print("   UNIVERSAL TIME, OF WHICH A SHORT AND")
+        print("   INDIVISIBLE INTERVAL HAS BEEN ASSIGNED TO")
+        print("   THEE; AND OF THAT WHICH IS FIXED BY DESTINY,")
+        print("   AND HOW SMALL A PART OF IT THOU ART.")
+        print("         --- MARCUS AURELIUS, V.24")
+    elif m1 == 3:
+        # Time-based: more than 10 stardates into the mission
+        print("   BE NOT PERTURBED, FOR ALL THINGS ARE")
+        print("   ACCORDING TO THE NATURE OF THE UNIVERSE;")
+        print("   AND IN A LITTLE TIME THOU WILT BE NOBODY")
+        print("   AND NOWHERE.")
+        print("         --- MARCUS AURELIUS, VIII.5")
+    elif m1 == 4:
+        # Time-based: more than 5 stardates into the mission
+        print("   IF HE IS A STRANGER TO THE UNIVERSE WHO")
+        print("   DOES NOT KNOW WHAT IS IN IT, NO LESS IS HE")
+        print("   A STRANGER WHO DOES NOT KNOW WHAT IS GOING")
+        print("   ON IN IT.")
+        print("         --- MARCUS AURELIUS, IV.29")
+    elif m1 == 5:
+        # Klingon-based: 3 Klingons in the quadrant
+        print("   TO SEEK WHAT IS IMPOSSIBLE IS MADNESS; AND")
+        print("   IT IS IMPOSSIBLE THAT THE BAD SHOULD NOT DO")
+        print("   SOMETHING OF THIS KIND.")
+        print("         --- MARCUS AURELIUS, V.17")
+    elif m1 == 6:
+        # Klingon-based: At least 1 Klingon in the quadrant
+        print("   LET NO ACT BE DONE WITHOUT PURPOSE, NOR")
+        print("   OTHERWISE THAN ACCORDING TO THE PERFECT")
+        print("   PRINCIPLES OF ART.")
+        print("         --- MARCUS AURELIUS, IV.2")
+    elif m1 == 7:
+        # Enterprise destroyed
+        print("   CONSIDER EVERYTHING WHICH HAPPENS, HAPPENS")
+        print("   JUSTLY, AND IF THOU OBSERVEST CAREFULLY,")
+        print("   THOU WILT FIND IT TO BE SO.")
+        print("         --- MARCUS AURELIUS, IV.10")
+    elif m1 == 8:
+        # Too many short-range scans in a single sector
+        print("   TO THE AIDS WHICH HAVE BEEN MENTIONED, LET")
+        print("   THIS ONE STILL BE ADDED:  MAKE FOR THYSELF A")
+        print("   DEFINITION OR DESCRIPTION OF THE THING WHICH")
+        print("   IS PRESENTED TO THEE, SO AS TO SEE DISTINCTLY WHAT")
+        print("   KIND OF THING IT IS IN ITS SUBSTANCE, IN ITS")
+        print("   NUDITY, IN ITS COMPLETE ENTIRETY; AND TELL THYSELF")
+        print("   ITS PROPER NAME, AND THE NAMES OF THE THINGS OF")
+        print("   WHICH IT HAS BEEN COMPOUNDED, AND INTO WHICH IT")
+        print("   WILL BE RESOLVED.")
+        print("         --- MARCUS AURELIUS, III.11")
+    elif m1 == 9:
+        # Enterprise defeates the Klingons
+        print("   EVERYTHING WHICH IS IN ANY WAY BEAUTIFUL IS")
+        print("   BEAUTIFUL IN ITSELF AND TERMINATES IN ITSELF,")
+        print("   NOT HAVING PRAISE AS PART OF ITSELF.  NEITHER")
+        print("   WORSE, THEN, NOR BETTER IS A THING MADE BY BEING")
+        print("   PRAISED.")
+        print("         --- MARCUS AURELIUS, IV.20")
+    elif m1 == 10:
+        # Energy-based: Enterprise with less than 150 energy
+        print("   THAT WHICH HAS DIED FALLS NOT OUT OF THE")
+        print("   UNIVERSE.  IF IT STAYS HERE, IT ALSO CHANGES")
+        print("   HERE, AND IS DISSOLVED INTO ITS PROPER PARTS,")
+        print("   WHICH ARE ELEMENTS OF THE UNIVERSE AND OF")
+        print("   THYSELF.")
+        print("         --- MARCUS AURELIUS, VIII.18")
+    elif m1 == 11:
+        # Energy-based: Enterprise with no energy
+        print("   THERE IS NO MAN SO FORTUNATE THAT THERE SHALL ")
+        print("   NOT BE BY HIM WHEN HE IS DYING SOME WHO ARE ")
+        print("   PLEASED WITH WHAT IS GOING TO HAPPEN.")
+        print("         --- MARCUS AURELIUS, X.36")
+    elif m1 == 12:
+        # Klingon-based: 4 Klingons in the quadrant
+        print("   SEE THAT THOU SECURE THIS PRESENT TIME TO THYSELF;")
+        print("   FOR THOSE WHO RATHER PURSUE POSTHUMOUS FAME DO NOT")
+        print("   CONSIDER THAT THE MEN OF AFTER TIME WILL BE")
+        print("   EXACTLY SUCH AS THOSE WHOM THEY CANNOT BEAR NOW;")
+        print("   AND BOTH ARE MORTAL. AND WHAT IS IT IN ANY WAY TO")
+        print("   THEE IF THESE MEN OF AFTER TIME UTTER THIS OR THAT")
+        print("   SOUND, OR HAVE THIS OR THAT OPINION ABOUT THEE?")
+        print("         --- MARCUS AURELIUS, VIII.44")
+    else:
+        print("")
+    print("\n")
 
 def end_game(won=False, quit=True, enterprise_killed=False):
     # Handle end-of-game situations.
     global restart
 
     if won:
+        m1 = 9
+        marcus_aurelius()
         print("CONGRATULATIONS, CAPTAIN! THE LAST KLINGON BATTLE CRUISER")
         print("MENACING THE FEDERATION HAS BEEN DESTROYED.\n")
         print("YOUR EFFICIENCY RATING IS "
@@ -860,6 +1159,8 @@ def end_game(won=False, quit=True, enterprise_killed=False):
     else:
         if not quit:
             if enterprise_killed:
+                m1 = 7
+                marcus_aurelius()
                 print("\nTHE ENTERPRISE HAS BEEN DESTROYED. THE FEDERATION "
                       "WILL BE CONQUERED.")
             print(f"IT IS STARDATE {round(t, 1)}")
@@ -884,11 +1185,13 @@ def end_game(won=False, quit=True, enterprise_killed=False):
 
 
 def main():
-    global restart
+    global restart, command, ma, m1
 
     f = {'NAV': navigation, 'SRS': short_range_scan, 'LRS': long_range_scan,
          'PHA': phaser_control, 'TOR': photon_torpedoes, 'SHE': shield_control,
          'DAM': damage_control, 'COM': computer, 'XXX': end_game}
+
+    order = ''
 
     while True:
         startup()
@@ -896,11 +1199,35 @@ def main():
         restart = False
 
         while not restart:
+            # Marcus Aurelius quotes
+            # Time-based triggers
+            m1 = t - t0
+            if m1 < 5:
+                m1 = 0
+            elif m1 < 10:
+                m1 = 4
+            elif m1 < 18:
+                m1 = 3
+            elif m1 < 25:
+                m1 = 2
+            else:
+                m1 = 1
+
+            # Energy-based triggers
+            if s + e <= 150 or (e <= 150 and d[6] != 0):
+                # Energy bwlow 150; Enterprise at risk
+                m1 = 10
+
             if s + e <= 10 or (e <= 10 and d[6] != 0):
+                # Energy bwlow 10; Enterprise stranded in space
                 print("\n** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP "
                       "IN SPACE.\nYOU HAVE INSUFFICIENT MANEUVERING ENERGY, "
                       "AND SHIELD CONTROL\nIS PRESENTLY INCAPABLE OF CROSS-"
                       "CIRCUITING TO ENGINE ROOM!!")
+                m1 = 11
+
+            if m1 > 0:
+                marcus_aurelius()
 
             command = input('COMMAND? ').upper().strip()
 
