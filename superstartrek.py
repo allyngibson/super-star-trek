@@ -22,7 +22,7 @@
 #     reached. This was an odd feature in a version of
 #     Star Trek in code descended from the UTexas version
 #     of the game. Can be disabled by uncommenting a line
-#     in the marcus_aurleius() procedure. This does not
+#     in the marcus_aurelius() procedure. This does not
 #     add *every* UTexas feature -- no Romulans, no
 #     Tholians, no Faerie Queen, no Death Ray. It's still
 #     the Leedom/Ahl game from Creative Computer, now
@@ -844,7 +844,6 @@ def startup():
                     else:
                         b4 = 0
                 k4 = 1
-            t9 += 2  # Add 2 days to the clock because diffuclty has increased
             q1, q2 = fnr(), fnr()  # Reset the Enterprise's starting position
 
     if b9 == 0:  # original has buggy extra code here
